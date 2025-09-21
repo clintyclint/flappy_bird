@@ -6,7 +6,7 @@ let config = {
     physics: {
         default: 'arcade',
         arcade: {
-            gravity: { y: 300 },
+            gravity: { y: 1200 },
             debug: false
         }
     },
@@ -27,9 +27,11 @@ function preload () {
     this.load.spritesheet('bird', 'assets/bird.png', { frameWidth: 64, frameHeight: 96});
 }
 
+const pipeXGap = 180 // px until next pipe
+const pipeYGap = 610 // px difference top vs bottom pipe
+const numPipes = 5;
 let bird;
 let background;
-let numPipes = 5;
 let topPipes = new Array(numPipes);
 let bottomPipes = new Array(numPipes);
 let hasLanded = false;
@@ -37,18 +39,21 @@ let hasBumped = false;
 let messageToPlayer;
 let cursors; 
 
+// Random num from 50px to 300px
+function randomY() {
+    return Phaser.Math.Between(50, 300) // Min 0 Max 500
+}
+
 // Create game
 function create () {
     // Setup scene
     background = this.add.tileSprite(0, 0, 900, 504, 'background').setOrigin(0, 0);
 
-    pipeXGap = 200 // 200 px until next pipe
-    pipeYGap = 600 // 650 px difference top vs bottom pipe
     currentPipeX = 0
  
     // Create multiple pipes
     for (let i = 0; i < numPipes; i++) {
-        topPipesY = Phaser.Math.Between(50, 300) // Min 0 Max 500
+        topPipesY = randomY()
         topPipes[i] = this.physics.add.sprite(pipeXGap+currentPipeX, topPipesY, 'column').setOrigin(0, 1)
         bottomPipes[i] = this.physics.add.sprite(pipeXGap+currentPipeX, topPipesY+pipeYGap, 'column').setOrigin(0, 1)
 
@@ -93,13 +98,15 @@ function create () {
 }
 
 let isGameStarted = false;
-const background_speed = 1;
-const column_speed = 60
+const background_speed = 1.25;
+const column_speed = 75
+
+// Update game
 function update() {
     // Game not started
     if (!isGameStarted) {
         // Cancel out gravity
-        bird.setVelocityY(-5)
+        bird.setVelocityY(-10) 
     }
 
     // Space pressed + Game not started
@@ -111,7 +118,7 @@ function update() {
     // Up arrow pressed + Not touched ground + Not touched pipes
     if (cursors.up.isDown && isGameStarted && !hasLanded && !hasBumped ) {
         // Bounce bird up
-        bird.setVelocityY(-160);
+        bird.setVelocityY(-280);
     }
 
     // Game started + Not touched ground + Not touched pipes
@@ -130,5 +137,14 @@ function update() {
             bottomPipes[i].setVelocityX(0)
         }
         messageToPlayer.text = `Oh no! You crashed!`;
+    }
+
+    // If a pipe is not visible
+    for (let i = 0; i < numPipes; i++) {
+        if (topPipes[i].x <= -32) {
+            topPipesY = randomY()
+            topPipes[i].setPosition(numPipes*pipeXGap, topPipesY)
+            bottomPipes[i].setPosition(numPipes*pipeXGap, topPipesY+pipeYGap)
+        }
     }
 }
