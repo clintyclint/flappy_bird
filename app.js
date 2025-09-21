@@ -29,8 +29,8 @@ function preload () {
 
 let bird;
 let background;
-let topColumns;
-let bottomColumns;
+let topPipes;
+let bottomPipes;
 let hasLanded = false;
 let hasBumped = false;
 let messageToPlayer;
@@ -40,21 +40,35 @@ let cursors;
 function create () {
     // Setup scene
     background = this.add.tileSprite(0, 0, 900, 504, 'background').setOrigin(0, 0);
+
+    topPipesY = Phaser.Math.Between(50, 300) // Min 0 Max 500
+    pipeXGap = 200 // 200 px until next pipe
+    pipeYGap = 650 // 650 px difference top vs bottom pipe
  
-    topColumns = this.physics.add.sprite(200, -75, 'column') // X: 0, 1700 Y: -250, 750
-    topColumns.body.setAllowGravity(false);
-    topColumns.body.setImmovable(true);
+    topPipes = this.physics.add.sprite(200, 250, 'column').setOrigin(0, 1) // Position starts at bottom left of the column
+    topPipes.body.setAllowGravity(false);
+    topPipes.body.setImmovable(true);
 
-    bottomColumns = this.physics.add.sprite(200, 575, 'column')
-    bottomColumns.body.setAllowGravity(false);
-    bottomColumns.body.setImmovable(true);
-
-    const roads = this.physics.add.staticGroup();
-    const road = roads.create(400, 568, 'road').setScale(2).refreshBody();
+    bottomPipes = this.physics.add.sprite(200, 900, 'column').setOrigin(0, 1) // Position starts at bottom left of the column
+    bottomPipes.body.setAllowGravity(false);
+    bottomPipes.body.setImmovable(true);
 
     bird = this.physics.add.sprite(50, 300, 'bird').setScale(2);
     bird.setBounce(0.2);
     bird.setCollideWorldBounds(true);
+
+    const roads = this.physics.add.staticGroup();
+    const road = roads.create(400, 568, 'road').setScale(2).refreshBody();
+
+    // Collision detection
+    this.physics.add.overlap(bird, road, ()=>hasLanded=true, null, this)
+    this.physics.add.collider(bird, road)
+
+    this.physics.add.overlap(bird, topPipes, ()=>hasBumped=true, null, this);
+    this.physics.add.overlap(bird, bottomPipes, ()=>hasBumped=true, null, this);
+
+    this.physics.add.collider(bird, topPipes);
+    this.physics.add.collider(bird, bottomPipes);
 
     // Intructions to player
     messageToPlayer = this.add.text(0, 0, `Intructions: Press space bar to start`, { 
@@ -64,22 +78,13 @@ function create () {
     });
     Phaser.Display.Align.In.BottomCenter(messageToPlayer, background, 0, 50);
 
-    // Collision detection
-    this.physics.add.overlap(bird, road, ()=>hasLanded=true, null, this)
-    this.physics.add.collider(bird, road)
-
-    this.physics.add.overlap(bird, topColumns, ()=>hasBumped=true, null, this);
-    this.physics.add.overlap(bird, bottomColumns, ()=>hasBumped=true, null, this);
-    this.physics.add.collider(bird, topColumns);
-    this.physics.add.collider(bird, bottomColumns);
-
     // Read up, down, left, right keys
     cursors = this.input.keyboard.createCursorKeys();
 }
 
 let isGameStarted = false;
 const background_speed = 1;
-const column_speed = -60
+const column_speed = 60
 function update() {
     // Game not started
     if (!isGameStarted) {
@@ -94,22 +99,22 @@ function update() {
     }
 
     // Up arrow pressed + Not touched ground + Not touched pipes
-    if (cursors.up.isDown && !hasLanded && !hasBumped) {
+    if (cursors.up.isDown && isGameStarted && !hasLanded && !hasBumped ) {
         // Bounce bird up
         bird.setVelocityY(-160);
     }
 
     // Game started + Not touched ground + Not touched pipes
     if (isGameStarted && !hasLanded && !hasBumped) {
-        topColumns.setVelocityX(column_speed)
-        bottomColumns.setVelocityX(column_speed)
+        topPipes.setVelocityX(-column_speed)
+        bottomPipes.setVelocityX(-column_speed)
         background.tilePositionX += background_speed;
     }
 
     // Touched ground or Touched pipes
     if (hasLanded || hasBumped) {
-        topColumns.setVelocityX(0)
-        bottomColumns.setVelocityX(0)
+        topPipes.setVelocityX(0)
+        bottomPipes.setVelocityX(0)
         messageToPlayer.text = `Oh no! You crashed!`;
     }
 }
