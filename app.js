@@ -28,6 +28,9 @@ function preload () {
 }
 
 let bird;
+let background;
+let topColumns;
+let bottomColumns;
 let hasLanded = false;
 let hasBumped = false;
 let messageToPlayer;
@@ -36,23 +39,20 @@ let cursors;
 // Create game
 function create () {
     // Setup scene
-    background = this.add.image(0, 0,'background').setOrigin(0, 0);
+    background = this.add.tileSprite(0, 0, 900, 504, 'background').setOrigin(0, 0);
+ 
+    topColumns = this.physics.add.sprite(200, -75, 'column') // X: 0, 1700 Y: -250, 750
+    topColumns.body.setAllowGravity(false);
+    topColumns.body.setImmovable(true);
+
+    bottomColumns = this.physics.add.sprite(200, 575, 'column')
+    bottomColumns.body.setAllowGravity(false);
+    bottomColumns.body.setImmovable(true);
+
     const roads = this.physics.add.staticGroup();
-    const topColumns = this.physics.add.staticGroup({
-        key: 'column',
-        repeat: 1,
-        setXY: { x: 200, y: 0, stepX: 300}
-    });
-
-    const bottomColumns = this.physics.add.staticGroup({
-        key: 'column',
-        repeat: 1,
-        setXY: { x: 350, y: 400, stepX: 300},
-    })
-
     const road = roads.create(400, 568, 'road').setScale(2).refreshBody();
 
-    bird = this.physics.add.sprite(0, 50, 'bird').setScale(2);
+    bird = this.physics.add.sprite(50, 300, 'bird').setScale(2);
     bird.setBounce(0.2);
     bird.setCollideWorldBounds(true);
 
@@ -78,10 +78,13 @@ function create () {
 }
 
 let isGameStarted = false;
+const background_speed = 1;
+const column_speed = -60
 function update() {
     // Game not started
     if (!isGameStarted) {
-        bird.setVelocityY(-160)
+        // Cancel out gravity
+        bird.setVelocityY(-5)
     }
 
     // Space pressed + Game not started
@@ -90,29 +93,23 @@ function update() {
         messageToPlayer.text = 'Intructions: Press the "^" button to stay upright\nAnd don\'t hit the columns or ground';
     }
 
-    // Space pressed + Touched ground + Touched pipes
+    // Up arrow pressed + Not touched ground + Not touched pipes
     if (cursors.up.isDown && !hasLanded && !hasBumped) {
+        // Bounce bird up
         bird.setVelocityY(-160);
     }
 
-    // Not touched ground or Not touched pipes
-    if (!hasLanded || !hasBumped) {
-        bird.body.velocity.x = 50;
-    } 
-
-    // Touched ground or Touched pipes or Game not started
-    if (hasLanded || hasBumped || !isGameStarted) {
-        bird.body.velocity.x = 0;
+    // Game started + Not touched ground + Not touched pipes
+    if (isGameStarted && !hasLanded && !hasBumped) {
+        topColumns.setVelocityX(column_speed)
+        bottomColumns.setVelocityX(column_speed)
+        background.tilePositionX += background_speed;
     }
 
     // Touched ground or Touched pipes
     if (hasLanded || hasBumped) {
+        topColumns.setVelocityX(0)
+        bottomColumns.setVelocityX(0)
         messageToPlayer.text = `Oh no! You crashed!`;
-    }
-
-    // Bird beyond 750px 
-    if (bird.x > 750) {
-        bird.setVelocityY(40);
-        messageToPlayer.text = `Congrats! You won!`;
     }
 }
