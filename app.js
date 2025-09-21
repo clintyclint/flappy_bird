@@ -1,7 +1,7 @@
 // Game Configuration
 let config = {
     renderer : Phaser.AUTO,
-    width: 1800,
+    width: 800,
     height: 600,
     physics: {
         default: 'arcade',
