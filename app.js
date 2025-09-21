@@ -29,8 +29,9 @@ function preload () {
 
 let bird;
 let background;
-let topPipes;
-let bottomPipes;
+let numPipes = 5;
+let topPipes = new Array(numPipes);
+let bottomPipes = new Array(numPipes);
 let hasLanded = false;
 let hasBumped = false;
 let messageToPlayer;
@@ -41,22 +42,28 @@ function create () {
     // Setup scene
     background = this.add.tileSprite(0, 0, 900, 504, 'background').setOrigin(0, 0);
 
-    topPipesY = Phaser.Math.Between(50, 300) // Min 0 Max 500
     pipeXGap = 200 // 200 px until next pipe
-    pipeYGap = 650 // 650 px difference top vs bottom pipe
+    pipeYGap = 600 // 650 px difference top vs bottom pipe
+    currentPipeX = 0
  
-    topPipes = this.physics.add.sprite(200, 250, 'column').setOrigin(0, 1) // Position starts at bottom left of the column
-    topPipes.body.setAllowGravity(false);
-    topPipes.body.setImmovable(true);
+    // Create multiple pipes
+    for (let i = 0; i < numPipes; i++) {
+        topPipesY = Phaser.Math.Between(50, 300) // Min 0 Max 500
+        topPipes[i] = this.physics.add.sprite(pipeXGap+currentPipeX, topPipesY, 'column').setOrigin(0, 1)
+        bottomPipes[i] = this.physics.add.sprite(pipeXGap+currentPipeX, topPipesY+pipeYGap, 'column').setOrigin(0, 1)
 
-    bottomPipes = this.physics.add.sprite(200, 900, 'column').setOrigin(0, 1) // Position starts at bottom left of the column
-    bottomPipes.body.setAllowGravity(false);
-    bottomPipes.body.setImmovable(true);
+        topPipes[i].body.setAllowGravity(false);
+        bottomPipes[i].body.setAllowGravity(false);
+
+        topPipes[i].body.setImmovable(true);
+        bottomPipes[i].body.setImmovable(true);
+        currentPipeX += pipeXGap;
+    }
 
     bird = this.physics.add.sprite(50, 300, 'bird').setScale(2);
     bird.setBounce(0.2);
     bird.setCollideWorldBounds(true);
-
+    
     const roads = this.physics.add.staticGroup();
     const road = roads.create(400, 568, 'road').setScale(2).refreshBody();
 
@@ -64,8 +71,10 @@ function create () {
     this.physics.add.overlap(bird, road, ()=>hasLanded=true, null, this)
     this.physics.add.collider(bird, road)
 
-    this.physics.add.overlap(bird, topPipes, ()=>hasBumped=true, null, this);
-    this.physics.add.overlap(bird, bottomPipes, ()=>hasBumped=true, null, this);
+    for (let i = 0; i < numPipes; i++) {
+        this.physics.add.overlap(bird, topPipes[i], ()=>hasBumped=true, null, this);
+        this.physics.add.overlap(bird, bottomPipes[i], ()=>hasBumped=true, null, this);
+    }
 
     this.physics.add.collider(bird, topPipes);
     this.physics.add.collider(bird, bottomPipes);
@@ -76,6 +85,7 @@ function create () {
         fontSize: "20px", color: "white", 
         backgroundColor: "black" 
     });
+    
     Phaser.Display.Align.In.BottomCenter(messageToPlayer, background, 0, 50);
 
     // Read up, down, left, right keys
@@ -106,15 +116,19 @@ function update() {
 
     // Game started + Not touched ground + Not touched pipes
     if (isGameStarted && !hasLanded && !hasBumped) {
-        topPipes.setVelocityX(-column_speed)
-        bottomPipes.setVelocityX(-column_speed)
+        for (let i = 0; i < numPipes; i++) {
+            topPipes[i].setVelocityX(-column_speed)
+            bottomPipes[i].setVelocityX(-column_speed)
+        }
         background.tilePositionX += background_speed;
     }
 
     // Touched ground or Touched pipes
     if (hasLanded || hasBumped) {
-        topPipes.setVelocityX(0)
-        bottomPipes.setVelocityX(0)
+        for (let i = 0; i < numPipes; i++) {
+            topPipes[i].setVelocityX(0)
+            bottomPipes[i].setVelocityX(0)
+        }
         messageToPlayer.text = `Oh no! You crashed!`;
     }
 }
