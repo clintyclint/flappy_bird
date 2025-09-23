@@ -28,15 +28,16 @@ function preload () {
 }
 
 const pipeXGap = 180 // px until next pipe
-const pipeYGap = 610 // px difference top vs bottom pipe
+const pipeYGap = 625 // px difference top vs bottom pipe
 const numPipes = 5;
+let score = 0;
 let bird;
 let background;
 let topPipes = new Array(numPipes);
 let bottomPipes = new Array(numPipes);
 let hasLanded = false;
 let hasBumped = false;
-let messageToPlayer;
+let scoreText;
 let cursors; 
 
 // Random num from 50px to 300px
@@ -48,9 +49,9 @@ function randomY() {
 function create () {
     // Setup scene
     background = this.add.tileSprite(0, 0, 900, 504, 'background').setOrigin(0, 0);
-
-    currentPipeX = 0
  
+    currentPipeX = 0;
+
     // Create multiple pipes
     for (let i = 0; i < numPipes; i++) {
         topPipesY = randomY()
@@ -83,22 +84,23 @@ function create () {
 
     this.physics.add.collider(bird, topPipes);
     this.physics.add.collider(bird, bottomPipes);
-
-    // Intructions to player
-    messageToPlayer = this.add.text(0, 0, `Intructions: Press space bar to start`, { 
+    
+    // Display Score
+    scoreText = this.add.text(0, 0, `Score: 0`, { 
         fontFamily: '"Comin Sans MS", Times, serif', 
-        fontSize: "20px", color: "white", 
-        backgroundColor: "black" 
+        fontSize: "30px", 
+        color: "white", 
     });
     
-    Phaser.Display.Align.In.BottomCenter(messageToPlayer, background, 0, 50);
+    Phaser.Display.Align.In.TopLeft(scoreText, background, -10, -10);
 
     // Read up, down, left, right keys
     cursors = this.input.keyboard.createCursorKeys();
 }
 
 let isGameStarted = false;
-const background_speed = 1.25;
+let isRetry = false;
+const background_speed = 0.3;
 const column_speed = 75
 
 // Update game
@@ -106,13 +108,12 @@ function update() {
     // Game not started
     if (!isGameStarted) {
         // Cancel out gravity
-        bird.setVelocityY(-10) 
+        bird.setVelocityY(-20) 
     }
 
-    // Space pressed + Game not started
-    if (cursors.space.isDown && !isGameStarted) {
+    // Up pressed + Game not started
+    if (cursors.up.isDown && !isGameStarted) {
         isGameStarted = true;
-        messageToPlayer.text = 'Intructions: Press the "^" button to stay upright\nAnd don\'t hit the columns or ground';
     }
 
     // Up arrow pressed + Not touched ground + Not touched pipes
@@ -136,15 +137,62 @@ function update() {
             topPipes[i].setVelocityX(0)
             bottomPipes[i].setVelocityX(0)
         }
-        messageToPlayer.text = `Oh no! You crashed!`;
     }
 
-    // If a pipe is not visible
+    // If pipe not visible or passed bird
     for (let i = 0; i < numPipes; i++) {
-        if (topPipes[i].x <= -32) {
+        if (topPipes[i].x < -32) { // 32 is column width
             topPipesY = randomY()
             topPipes[i].setPosition(numPipes*pipeXGap, topPipesY)
             bottomPipes[i].setPosition(numPipes*pipeXGap, topPipesY+pipeYGap)
         }
+        if (33 < topPipes[i].x && topPipes[i].x < 34) { // 33 is bird start px - bird size px
+            score ++;
+            scoreText.text = `Score: ` + score
+        }
+    }
+
+    // If game already started and touched ground or game already started and touched pipes
+    if (isGameStarted && hasLanded || isGameStarted && hasBumped) {
+        gameoverText = this.add.text(0, 0, `Game over! Press ^ to retry`, { 
+            fontFamily: '"Comin Sans MS", Times, serif', 
+            fontSize: "30px", 
+            color: "white", 
+        });
+        Phaser.Display.Align.In.Center(gameoverText, background, 0, 0);
+
+        isGameStarted = false;
+        isRetry = true;
+        hasLanded = false;
+        hasBumped = false;
+        score = 0;
+        scoreText.text = `Score: ` + score
+
+        bird.setVelocityY(-20)
+        bird.setVelocityX(0)
+        bird.setPosition(50, 300);
+
+        currentPipeX = 0;
+
+        for (let i = 0; i < numPipes; i++) {
+            topPipesY = randomY()
+            topPipes[i].setPosition(pipeXGap+currentPipeX, topPipesY)
+            bottomPipes[i].setPosition(pipeXGap+currentPipeX, topPipesY+pipeYGap)
+
+            topPipes[i].body.setAllowGravity(false);
+            bottomPipes[i].body.setAllowGravity(false);
+
+            topPipes[i].body.setImmovable(true);
+            bottomPipes[i].body.setImmovable(true);
+            currentPipeX += pipeXGap;
+
+            topPipes[i].refreshBody
+            bottomPipes[i].refreshBody
+    }
+    }
+
+    // If game is in retry phase and up is pressed
+    if (isRetry && cursors.up.isDown) {
+        gameoverText.text = ``;
     }
 }
