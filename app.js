@@ -29,8 +29,9 @@ function preload () {
 
 const pipeXGap = 180 // px until next pipe
 const pipeYGap = 625 // px difference top vs bottom pipe
-const numPipes = 5;
+const numPipes = 5; 
 let score = 0;
+let highscore = 0;
 let bird;
 let background;
 let topPipes = new Array(numPipes);
@@ -38,6 +39,7 @@ let bottomPipes = new Array(numPipes);
 let hasLanded = false;
 let hasBumped = false;
 let scoreText;
+let highscoreText;
 let cursors; 
 
 // Random num from 50px to 300px
@@ -91,8 +93,16 @@ function create () {
         fontSize: "30px", 
         color: "white", 
     });
+
+    // Display High-Score
+    highscoreText = this.add.text(0, 0, `High-Score: 0`, { 
+        fontFamily: '"Comin Sans MS", Times, serif', 
+        fontSize: "30px", 
+        color: "white", 
+    });
     
-    Phaser.Display.Align.In.TopLeft(scoreText, background, -10, -10);
+    Phaser.Display.Align.In.TopLeft(scoreText, background, -10, -50);
+    Phaser.Display.Align.In.TopLeft(highscoreText, background, -10, -10);
 
     // Read up, down, left, right keys
     cursors = this.input.keyboard.createCursorKeys();
@@ -165,8 +175,14 @@ function update() {
         isRetry = true;
         hasLanded = false;
         hasBumped = false;
+
+        if (score > highscore) {
+            highscore = score;
+        }
+
         score = 0;
-        scoreText.text = `Score: ` + score
+        scoreText.text = `Score: 0`;
+        highscoreText.text = `High-Score: ` + highscore
 
         bird.setVelocityY(-20)
         bird.setVelocityX(0)
